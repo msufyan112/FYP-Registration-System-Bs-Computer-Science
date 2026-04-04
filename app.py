@@ -102,32 +102,39 @@ def add_bg_from_url():
     st.markdown(
          f"""
          <style>
-         /* Set the global background image */
+         /* Global Background */
          .stApp {{
              background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
              background-attachment: fixed;
              background-size: cover;
          }}
          
-         /* IMPROVED VISIBILITY FOR THE FORM */
+         /* CHANGE FORM TO BLACK */
          [data-testid="stForm"] {{
-             background-color: rgba(255, 255, 255, 0.95); /* Nearly solid white */
+             background-color: rgba(0, 0, 0, 0.85); /* Semi-transparent Black */
              padding: 30px;
              border-radius: 15px;
-             border: 2px solid #f0f2f6;
+             border: 1px solid #333;
          }}
 
-         /* Force all text inside the form to be Dark/Black */
+         /* Force all labels and text inside the form to be White */
          [data-testid="stForm"] p, 
          [data-testid="stForm"] h1, 
          [data-testid="stForm"] h2, 
          [data-testid="stForm"] h3, 
          [data-testid="stForm"] label,
          [data-testid="stForm"] .stMarkdown {{
-             color: #1a1a1a !important;
+             color: #ffffff !important;
          }}
 
-         /* Make the Title at the top white so it stands out against the image */
+         /* Style the input fields so they stand out against the black form */
+         [data-testid="stForm"] input, 
+         [data-testid="stForm"] select {{
+             background-color: #262730 !important;
+             color: white !important;
+         }}
+
+         /* Headers outside the form */
          h1, h3 {{
              color: white !important;
              text-shadow: 2px 2px 4px #000000;
