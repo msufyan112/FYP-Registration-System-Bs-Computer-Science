@@ -96,3 +96,27 @@ if os.path.exists(groups_path):
     st.dataframe(display_df, use_container_width=True)
 else:
     st.info("No groups registered yet.")
+
+# --- BACKGROUND IMAGE SETTINGS ---
+def add_bg_from_url():
+    st.markdown(
+         f"""
+         <style>
+         .stApp {{
+             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
+             background-attachment: fixed;
+             background-size: cover;
+         }}
+         
+         /* This makes the form container semi-transparent so you can still read it */
+         [data-testid="stForm"] {{
+             background-color: rgba(255, 255, 255, 0.9);
+             padding: 20px;
+             border-radius: 15px;
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
+
+add_bg_from_url()
