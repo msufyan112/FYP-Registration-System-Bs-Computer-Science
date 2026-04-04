@@ -22,33 +22,40 @@ def add_custom_style():
              background-size: cover;
          }}
          
-         /* 2. Styling the Form Container */
+         /* 2. Styling the Form Container - TRANSPARENT WITH BORDER */
          [data-testid="stForm"] {{
-             background-color: rgba(0, 0, 0, 0.8) !important;
+             background-color: rgba(0, 0, 0, 0.2) !important; /* Very transparent */
              padding: 30px !important;
              border-radius: 15px !important;
-             border: 1px solid #444 !important;
+             border: 2px solid rgba(255, 255, 255, 0.5) !important; /* Semi-white border */
+             backdrop-filter: blur(5px); /* Optional: adds a slight blur to make text readable */
          }}
 
-         /* 3. Styling the Registered Groups Area */
-         /* This targets the bottom vertical block to match the form */
+         /* 3. Styling the Registered Groups Area - TRANSPARENT WITH BORDER */
          [data-testid="stVerticalBlock"] > div:last-child {{
-             background-color: rgba(0, 0, 0, 0.8) !important;
+             background-color: rgba(0, 0, 0, 0.2) !important;
              padding: 20px !important;
              border-radius: 15px !important;
+             border: 2px solid rgba(255, 255, 255, 0.5) !important;
+             backdrop-filter: blur(5px);
          }}
 
-         /* 4. Force Text Colors for Visibility */
+         /* 4. Text Colors and Shadows for Visibility on Transparent Background */
          h1, h2, h3, label, p, .stMarkdown {{
              color: white !important;
-             text-shadow: 1px 1px 2px black;
+             text-shadow: 2px 2px 8px rgba(0, 0, 0, 1); /* Stronger shadow to pop against image */
          }}
 
-         /* 5. Styling the Alert (Info box) */
+         /* Make labels bold for better visibility */
+         label {{
+             font-weight: bold !important;
+         }}
+
+         /* Styling the Info box to be transparent too */
          .stAlert {{
-             background-color: rgba(28, 51, 84, 0.8) !important;
+             background-color: rgba(255, 255, 255, 0.1) !important;
              color: white !important;
-             border: 1px solid #333 !important;
+             border: 1px solid rgba(255, 255, 255, 0.3) !important;
          }}
          </style>
          """,
