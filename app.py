@@ -97,44 +97,44 @@ if os.path.exists(groups_path):
 else:
     st.info("No groups registered yet.")
 
-# # --- BACKGROUND IMAGE SETTINGS ---
-# def add_bg_from_url():
-#     st.markdown(
-#          f"""
-#          <style>
-#          /* Set the global background image */
-#          .stApp {{
-#              background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
-#              background-attachment: fixed;
-#              background-size: cover;
-#          }}
+# --- BACKGROUND IMAGE SETTINGS ---
+def add_bg_from_url():
+    st.markdown(
+         f"""
+         <style>
+         /* Set the global background image */
+         .stApp {{
+             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
+             background-attachment: fixed;
+             background-size: cover;
+         }}
          
-#          /* IMPROVED VISIBILITY FOR THE FORM */
-#          [data-testid="stForm"] {{
-#              background-color: rgba(255, 255, 255, 0.95); /* Nearly solid white */
-#              padding: 30px;
-#              border-radius: 15px;
-#              border: 2px solid #f0f2f6;
-#          }}
+         /* IMPROVED VISIBILITY FOR THE FORM */
+         [data-testid="stForm"] {{
+             background-color: rgba(255, 255, 255, 0.95); /* Nearly solid white */
+             padding: 30px;
+             border-radius: 15px;
+             border: 2px solid #f0f2f6;
+         }}
 
-#          /* Force all text inside the form to be Dark/Black */
-#          [data-testid="stForm"] p, 
-#          [data-testid="stForm"] h1, 
-#          [data-testid="stForm"] h2, 
-#          [data-testid="stForm"] h3, 
-#          [data-testid="stForm"] label,
-#          [data-testid="stForm"] .stMarkdown {{
-#              color: #1a1a1a !important;
-#          }}
+         /* Force all text inside the form to be Dark/Black */
+         [data-testid="stForm"] p, 
+         [data-testid="stForm"] h1, 
+         [data-testid="stForm"] h2, 
+         [data-testid="stForm"] h3, 
+         [data-testid="stForm"] label,
+         [data-testid="stForm"] .stMarkdown {{
+             color: #1a1a1a !important;
+         }}
 
-#          /* Make the Title at the top white so it stands out against the image */
-#          h1, h3 {{
-#              color: white !important;
-#              text-shadow: 2px 2px 4px #000000;
-#          }}
-#          </style>
-#          """,
-#          unsafe_allow_html=True
-#      )
+         /* Make the Title at the top white so it stands out against the image */
+         h1, h3 {{
+             color: white !important;
+             text-shadow: 2px 2px 4px #000000;
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
 
-# add_bg_from_url()
+add_bg_from_url()
