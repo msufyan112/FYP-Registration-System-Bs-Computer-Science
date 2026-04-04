@@ -109,33 +109,45 @@ def add_bg_from_url():
              background-size: cover;
          }}
          
-         /* CHANGE FORM TO BLACK */
+         /* FORM STYLING */
          [data-testid="stForm"] {{
-             background-color: rgba(0, 0, 0, 0.85); /* Semi-transparent Black */
+             background-color: rgba(0, 0, 0, 0.85); 
              padding: 30px;
              border-radius: 15px;
              border: 1px solid #333;
          }}
 
-         /* Force all labels and text inside the form to be White */
-         [data-testid="stForm"] p, 
-         [data-testid="stForm"] h1, 
-         [data-testid="stForm"] h2, 
-         [data-testid="stForm"] h3, 
-         [data-testid="stForm"] label,
-         [data-testid="stForm"] .stMarkdown {{
-             color: #ffffff !important;
-         }}
-
-         /* Style the input fields so they stand out against the black form */
-         [data-testid="stForm"] input, 
-         [data-testid="stForm"] select {{
-             background-color: #262730 !important;
+         /* REGISTERED GROUPS AREA STYLING */
+         /* This targets the container holding the table and 'No groups registered' message */
+         [data-testid="stVerticalBlock"] > div:last-child {{
+             background-color: rgba(0, 0, 0, 0.85);
+             padding: 20px;
+             border-radius: 15px;
              color: white !important;
          }}
 
+         /* Ensure the table itself looks good */
+         .stDataFrame {{
+             background-color: transparent !important;
+         }}
+
+         /* Force all labels and text inside the form/sections to be White */
+         [data-testid="stForm"] label,
+         [data-testid="stForm"] p,
+         [data-testid="stVerticalBlock"] p,
+         .stMarkdown {{
+             color: #ffffff !important;
+         }}
+
+         /* Styling the "No groups registered yet" info box specifically */
+         .stAlert {{
+             background-color: rgba(0, 0, 0, 0.7) !important;
+             color: white !important;
+             border: 1px solid #444;
+         }}
+
          /* Headers outside the form */
-         h1, h3 {{
+         h1, h2, h3 {{
              color: white !important;
              text-shadow: 2px 2px 4px #000000;
          }}
