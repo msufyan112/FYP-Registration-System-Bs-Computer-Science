@@ -17,7 +17,7 @@ def add_custom_style():
          <style>
          /* 1. Global Background Image */
          .stApp {{
-             background-image: url("https://unsplash.com/photos/a-black-and-white-photo-of-a-bunch-of-cubes-CkQV7km2uHs");
+             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
              background-attachment: fixed;
              background-size: cover;
          }}
