@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 
-# --- PATH LOGIC (Prevents FileNotFoundError on Cloud) ---
+# --- PATH LOGIC ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 students_path = os.path.join(current_dir, 'students.csv')
 groups_path = os.path.join(current_dir, 'final_groups.csv')
@@ -10,10 +10,57 @@ groups_path = os.path.join(current_dir, 'final_groups.csv')
 # --- CONFIGURATION ---
 st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓")
 
+# --- BACKGROUND & STYLING ---
+def add_custom_style():
+    st.markdown(
+         f"""
+         <style>
+         /* 1. Global Background Image */
+         .stApp {{
+             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
+             background-attachment: fixed;
+             background-size: cover;
+         }}
+         
+         /* 2. Styling the Form Container */
+         [data-testid="stForm"] {{
+             background-color: rgba(0, 0, 0, 0.8) !important;
+             padding: 30px !important;
+             border-radius: 15px !important;
+             border: 1px solid #444 !important;
+         }}
+
+         /* 3. Styling the Registered Groups Area */
+         /* This targets the bottom vertical block to match the form */
+         [data-testid="stVerticalBlock"] > div:last-child {{
+             background-color: rgba(0, 0, 0, 0.8) !important;
+             padding: 20px !important;
+             border-radius: 15px !important;
+         }}
+
+         /* 4. Force Text Colors for Visibility */
+         h1, h2, h3, label, p, .stMarkdown {{
+             color: white !important;
+             text-shadow: 1px 1px 2px black;
+         }}
+
+         /* 5. Styling the Alert (Info box) */
+         .stAlert {{
+             background-color: rgba(28, 51, 84, 0.8) !important;
+             color: white !important;
+             border: 1px solid #333 !important;
+         }}
+         </style>
+         """,
+         unsafe_allow_html=True
+     )
+
+add_custom_style()
+
 # --- DATA LOADING ---
 def load_data():
     if not os.path.exists(students_path):
-        st.error(f"Error: '{students_path}' not found! Please ensure students.csv is in the same folder as app.py.")
+        st.error(f"Error: '{students_path}' not found!")
         return [], []
         
     all_students_df = pd.read_csv(students_path)
@@ -21,15 +68,17 @@ def load_data():
     
     assigned_students = []
     if os.path.exists(groups_path):
-        df = pd.read_csv(groups_path)
-        for col in ['Member 1', 'Member 2', 'Member 3']:
-            assigned_students.extend(df[col].dropna().tolist())
+        try:
+            df = pd.read_csv(groups_path)
+            for col in ['Member 1', 'Member 2', 'Member 3']:
+                if col in df.columns:
+                    assigned_students.extend(df[col].dropna().tolist())
+        except:
+            pass
             
     return all_students, assigned_students
 
-# Supervisor List
 supervisors = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
-
 all_students, assigned_students = load_data()
 
 # --- UI DESIGN ---
@@ -58,7 +107,7 @@ with st.form("registration_form", clear_on_submit=True):
 
     submit = st.form_submit_button("Submit Registration")
 
-# --- LOGIC & VALIDATION ---
+# --- LOGIC ---
 if submit:
     current_selection = [m for m in [m1, m2, m3] if m not in ["-- Select --", "None"]]
     
@@ -89,12 +138,7 @@ st.divider()
 st.subheader("📋 Registered Groups")
 if os.path.exists(groups_path):
     display_df = pd.read_csv(groups_path)
-    
-    # SHIFT INDEX TO START FROM 1
     display_df.index = display_df.index + 1
-    
     st.dataframe(display_df, use_container_width=True)
 else:
     st.info("No groups registered yet.")
-
-
