@@ -104,7 +104,7 @@ def add_bg_from_url():
          <style>
          /* Global Background */
          .stApp {{
-             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
+             background-image: url("https://unsplash.com/photos/a-black-and-white-photo-of-a-bunch-of-cubes-CkQV7km2uHs");
              background-attachment: fixed;
              background-size: cover;
          }}
