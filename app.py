@@ -10,8 +10,8 @@ groups_path = os.path.join(current_dir, 'final_groups.csv')
 # --- CONFIGURATION ---
 st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="centered")
 
-# --- ADMIN PASSWORD ---
-ADMIN_PASSWORD = "host123"  # Change this to your preferred password
+# --- RENAMED ADMIN VARIABLE ---
+FORM_NAME = "FYPREGISTRATION"  # This was previously ADMIN_PASSWORD
 
 # --- BACKGROUND & STYLING ---
 def add_custom_style():
@@ -81,7 +81,6 @@ def load_data():
     if os.path.exists(groups_path):
         try:
             df = pd.read_csv(groups_path)
-            # Collect all members already registered to filter them out
             for col in ['Member 1', 'Member 2', 'Member 3']:
                 if col in df.columns:
                     assigned_students.extend(df[col].dropna().tolist())
@@ -97,9 +96,10 @@ all_students, assigned_students = load_data()
 # --- SIDEBAR ADMIN CONTROL (HIDDEN IN EXPANDER) ---
 with st.sidebar.expander("🛠️ Admin Portal"):
     st.write("Restricted to Host use only.")
+    # Check against FORM_NAME logic
     admin_key = st.text_input("Enter Host Password", type="password")
 
-    if admin_key == ADMIN_PASSWORD:
+    if admin_key == FORM_NAME:
         st.success("Logged in as Host")
         st.subheader("Admin Controls")
         
@@ -132,71 +132,4 @@ with st.form("registration_form", clear_on_submit=True):
     
     st.divider()
     
-    st.subheader("2. Group Members")
-    available = sorted([s for s in all_students if s not in assigned_students])
-    
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        m1 = st.selectbox("Member 1 (Leader)", ["-- Select --"] + available)
-    with col2:
-        m2 = st.selectbox("Member 2", ["-- Select --"] + available)
-    with col3:
-        m3 = st.selectbox("Member 3 (Optional)", ["-- Select --", "None"] + available)
-
-    submit = st.form_submit_button("Submit Registration")
-
-# --- LOGIC ---
-if submit:
-    selected_sups = [s for s in [s1, s2, s3] if s != "-- Select --"]
-    current_members = [m for m in [m1, m2, m3] if m not in ["-- Select --", "None"]]
-    
-    if not group_name or len(selected_sups) < 3:
-        st.error("⚠️ Please fill in the Title and select ALL 3 supervisor priorities.")
-    elif len(set(selected_sups)) < 3:
-        st.error("⚠️ Each supervisor choice must be unique.")
-    elif len(current_members) < 2:
-        st.error("⚠️ A group must have at least 2 members.")
-    elif len(current_members) != len(set(current_members)):
-        st.error("⚠️ You cannot select the same student twice!")
-    else:
-        new_row = {
-            "Group Name": group_name,
-            "1st Choice": s1,
-            "2nd Choice": s2,
-            "3rd Choice": s3,
-            "Member 1": m1,
-            "Member 2": m2,
-            "Member 3": m3 if m3 != "None" else ""
-        }
-        
-        new_data = pd.DataFrame([new_row])
-        file_exists = os.path.exists(groups_path)
-        new_data.to_csv(groups_path, mode='a', index=False, header=not file_exists)
-        
-        st.success(f"✅ Group '{group_name}' registered successfully!")
-        st.balloons()
-        st.rerun()
-
-# --- DISPLAY SECTION ---
-st.divider()
-st.subheader("📋 Registered Groups")
-
-st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
-if os.path.exists(groups_path):
-    display_df = pd.read_csv(groups_path)
-    display_df.index = display_df.index + 1
-    
-    # Host-only deletion tools
-    if admin_key == ADMIN_PASSWORD:
-        st.info("Host Mode: Select a row index to delete.")
-        row_to_delete = st.number_input("Enter Row Number to Delete", min_value=1, max_value=len(display_df), step=1)
-        if st.button("❌ Delete Selected Row"):
-            display_df = display_df.drop(display_df.index[row_to_delete-1])
-            # Reset index and save
-            display_df.to_csv(groups_path, index=False)
-            st.rerun()
-            
-    st.dataframe(display_df, use_container_width=True)
-else:
-    st.info("No groups registered yet.")
-st.markdown('</div>', unsafe_allow_html=True)
+    st.
