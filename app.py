@@ -10,7 +10,7 @@ groups_path = os.path.join(current_dir, 'final_groups.csv')
 # --- CONFIGURATION ---
 st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="centered")
 
-# --- RENAMED ADMIN VARIABLE ---
+# --- ADMIN CREDENTIALS ---
 FORM_NAME = "FYPREGISTRATION"
 
 # --- BACKGROUND & STYLING ---
@@ -76,21 +76,34 @@ def load_data():
 supervisors_list = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
 all_students, assigned_students = load_data()
 
-# --- SIDEBAR ADMIN CONTROL (Initially Hidden) ---
+# --- SIDEBAR ADMIN & LOGOUT LOGIC ---
 st.sidebar.title("Registration Portal")
-# A quiet input box with no obvious label to hide the admin portal
-secret_input = st.sidebar.text_input("Host Login", placeholder="Type password to edit...", type="password")
-is_host = (secret_input == FORM_NAME)
 
-if is_host:
+if 'is_host' not in st.session_state:
+    st.session_state.is_host = False
+
+if not st.session_state.is_host:
+    # Login Mode
+    secret_input = st.sidebar.text_input("Host Login", placeholder="Enter password...", type="password")
+    if secret_input == FORM_NAME:
+        st.session_state.is_host = True
+        st.rerun()
+    elif secret_input != "":
+        st.sidebar.error("Access Denied")
+else:
+    # Logged In Mode
     st.sidebar.success("Host Mode Active")
+    if st.sidebar.button("🚪 Logout"):
+        st.session_state.is_host = False
+        st.rerun()
+    
     st.sidebar.subheader("🛠️ Admin Controls")
     if st.sidebar.button("🗑️ Clear All Registrations"):
         if os.path.exists(groups_path):
             os.remove(groups_path)
             st.rerun()
-elif secret_input != "":
-    st.sidebar.error("Access Denied")
+
+is_host = st.session_state.is_host
 
 # --- UI DESIGN ---
 st.title("🎓 FYP Registration Portal")
@@ -153,7 +166,7 @@ if os.path.exists(groups_path):
     df_display = df.copy()
     df_display.index = df_display.index + 1
 
-    # --- HOST EDIT MODE (Only visible if password is correct) ---
+    # --- HOST EDIT MODE ---
     if is_host:
         with st.expander("📝 Host: Edit Existing Registration"):
             row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
@@ -172,16 +185,16 @@ if os.path.exists(groups_path):
                 edit_m1 = e_m1.selectbox("Member 1", all_students, index=all_students.index(target_data["Member 1"]))
                 edit_m2 = e_m2.selectbox("Member 2", all_students, index=all_students.index(target_data["Member 2"]))
                 
-                m3_val = target_data["Member 3"] if pd.notna(target_data["Member 3"]) and target_data["Member 3"] != "" else "None"
+                m3_raw = target_data["Member 3"]
+                m3_val = m3_raw if pd.notna(m3_raw) and m3_raw != "" else "None"
                 edit_m3 = e_m3.selectbox("Member 3", ["None"] + all_students, index=(all_students.index(m3_val)+1 if m3_val != "None" else 0))
 
-                col_btn1, col_btn2 = st.columns(2)
-                if col_btn1.form_submit_button("💾 Save Changes"):
+                b1, b2 = st.columns(2)
+                if b1.form_submit_button("💾 Save Changes"):
                     df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
                     st.rerun()
-                
-                if col_btn2.form_submit_button("❌ Delete This Row"):
+                if b2.form_submit_button("❌ Delete This Row"):
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
                     st.rerun()
