@@ -18,11 +18,14 @@ def add_custom_style():
     st.markdown(
          f"""
          <style>
+         /* 1. Global Background Image */
          .stApp {{
              background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
              background-attachment: fixed;
              background-size: cover;
          }}
+         
+         /* 2. Styling the Form Container */
          [data-testid="stForm"] {{
              background-color: rgba(0, 0, 0, 0.4) !important; 
              padding: 30px !important;
@@ -30,19 +33,34 @@ def add_custom_style():
              border: 2px solid rgba(255, 255, 255, 0.5) !important;
              backdrop-filter: blur(8px);
          }}
-         /* Bottom container for table */
+
+         /* 3. Styling the Registered Groups Area Container */
          .main-table-container {{
              background-color: rgba(0, 0, 0, 0.4);
              padding: 20px;
              border-radius: 15px;
              border: 2px solid rgba(255, 255, 255, 0.5);
              backdrop-filter: blur(8px);
+             margin-top: 20px;
          }}
+
+         /* 4. Text Colors and Shadows */
          h1, h2, h3, label, p, .stMarkdown {{
              color: white !important;
              text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
          }}
-         label {{ font-weight: bold !important; }}
+
+         /* Make labels bold */
+         label {{
+             font-weight: bold !important;
+         }}
+
+         /* Styling the Info/Alert boxes */
+         .stAlert {{
+             background-color: rgba(255, 255, 255, 0.1) !important;
+             color: white !important;
+             border: 1px solid rgba(255, 255, 255, 0.3) !important;
+         }}
          </style>
          """,
          unsafe_allow_html=True
@@ -55,44 +73,50 @@ def load_data():
     if not os.path.exists(students_path):
         st.error(f"Error: '{students_path}' not found!")
         return [], []
+        
     all_students_df = pd.read_csv(students_path)
     all_students = all_students_df['Name'].tolist()
+    
     assigned_students = []
     if os.path.exists(groups_path):
         try:
             df = pd.read_csv(groups_path)
+            # Collect all members already registered to filter them out
             for col in ['Member 1', 'Member 2', 'Member 3']:
                 if col in df.columns:
                     assigned_students.extend(df[col].dropna().tolist())
         except:
             pass
+            
     return all_students, assigned_students
 
 # Fixed Supervisor List
 supervisors_list = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
 all_students, assigned_students = load_data()
 
-# --- SIDEBAR ADMIN CONTROL ---
-st.sidebar.title("🔐 Host Access")
-admin_key = st.sidebar.text_input("Enter Host Password", type="password")
+# --- SIDEBAR ADMIN CONTROL (HIDDEN IN EXPANDER) ---
+with st.sidebar.expander("🛠️ Admin Portal"):
+    st.write("Restricted to Host use only.")
+    admin_key = st.text_input("Enter Host Password", type="password")
 
-if admin_key == ADMIN_PASSWORD:
-    st.sidebar.success("Logged in as Host")
-    st.sidebar.subheader("Admin Controls")
-    if st.sidebar.button("🗑️ Clear All Registrations"):
-        if os.path.exists(groups_path):
-            os.remove(groups_path)
-            st.sidebar.warning("File deleted! Refreshing...")
-            st.rerun()
-else:
-    if admin_key != "":
-        st.sidebar.error("Incorrect Password")
+    if admin_key == ADMIN_PASSWORD:
+        st.success("Logged in as Host")
+        st.subheader("Admin Controls")
+        
+        if st.button("🗑️ Clear All Registrations"):
+            if os.path.exists(groups_path):
+                os.remove(groups_path)
+                st.warning("File deleted! Refreshing...")
+                st.rerun()
+    else:
+        if admin_key != "":
+            st.error("Incorrect Password")
 
 # --- UI DESIGN ---
 st.title("🎓 FYP Registration Portal")
 st.markdown("### Final Year Project Group & Supervisor Selection")
 
-# --- THE FORM (Public) ---
+# --- THE FORM ---
 with st.form("registration_form", clear_on_submit=True):
     st.subheader("1. Project Details")
     group_name = st.text_input("Project Title / Group Name", placeholder="Enter your project title...")
@@ -137,13 +161,19 @@ if submit:
     else:
         new_row = {
             "Group Name": group_name,
-            "1st Choice": s1, "2nd Choice": s2, "3rd Choice": s3,
-            "Member 1": m1, "Member 2": m2, "Member 3": m3 if m3 != "None" else ""
+            "1st Choice": s1,
+            "2nd Choice": s2,
+            "3rd Choice": s3,
+            "Member 1": m1,
+            "Member 2": m2,
+            "Member 3": m3 if m3 != "None" else ""
         }
+        
         new_data = pd.DataFrame([new_row])
         file_exists = os.path.exists(groups_path)
         new_data.to_csv(groups_path, mode='a', index=False, header=not file_exists)
-        st.success(f"✅ Registered successfully!")
+        
+        st.success(f"✅ Group '{group_name}' registered successfully!")
         st.balloons()
         st.rerun()
 
@@ -156,12 +186,13 @@ if os.path.exists(groups_path):
     display_df = pd.read_csv(groups_path)
     display_df.index = display_df.index + 1
     
-    # Only the Host sees the "Delete Row" logic
+    # Host-only deletion tools
     if admin_key == ADMIN_PASSWORD:
-        st.info("Host Mode: You can select a row index to delete a specific group.")
+        st.info("Host Mode: Select a row index to delete.")
         row_to_delete = st.number_input("Enter Row Number to Delete", min_value=1, max_value=len(display_df), step=1)
         if st.button("❌ Delete Selected Row"):
             display_df = display_df.drop(display_df.index[row_to_delete-1])
+            # Reset index and save
             display_df.to_csv(groups_path, index=False)
             st.rerun()
             
