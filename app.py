@@ -76,21 +76,21 @@ def load_data():
 supervisors_list = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
 all_students, assigned_students = load_data()
 
-# --- SIDEBAR ADMIN CONTROL ---
-with st.sidebar.expander("🛠️ Admin Portal"):
-    st.write("Restricted to Host use only.")
-    admin_key = st.text_input("Enter Host Password", type="password")
-    is_host = (admin_key == FORM_NAME)
+# --- SIDEBAR ADMIN CONTROL (Initially Hidden) ---
+st.sidebar.title("Registration Portal")
+# A quiet input box with no obvious label to hide the admin portal
+secret_input = st.sidebar.text_input("Host Login", placeholder="Type password to edit...", type="password")
+is_host = (secret_input == FORM_NAME)
 
-    if is_host:
-        st.success("Logged in as Host")
-        st.subheader("Admin Controls")
-        if st.button("🗑️ Clear All Registrations"):
-            if os.path.exists(groups_path):
-                os.remove(groups_path)
-                st.rerun()
-    elif admin_key != "":
-        st.error("Incorrect Password")
+if is_host:
+    st.sidebar.success("Host Mode Active")
+    st.sidebar.subheader("🛠️ Admin Controls")
+    if st.sidebar.button("🗑️ Clear All Registrations"):
+        if os.path.exists(groups_path):
+            os.remove(groups_path)
+            st.rerun()
+elif secret_input != "":
+    st.sidebar.error("Access Denied")
 
 # --- UI DESIGN ---
 st.title("🎓 FYP Registration Portal")
@@ -153,25 +153,21 @@ if os.path.exists(groups_path):
     df_display = df.copy()
     df_display.index = df_display.index + 1
 
-    # --- HOST EDIT MODE ---
+    # --- HOST EDIT MODE (Only visible if password is correct) ---
     if is_host:
         with st.expander("📝 Host: Edit Existing Registration"):
-            row_idx = st.number_input("Enter Row Number to Edit/Delete", min_value=1, max_value=len(df_display), step=1)
-            
-            # Load current row data for editing
+            row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
             target_data = df.iloc[int(row_idx)-1]
             
             with st.form("edit_form"):
                 st.write(f"Editing Row {row_idx}")
                 edit_name = st.text_input("Edit Title", value=target_data["Group Name"])
                 
-                # Supervisor Edits
                 e_c1, e_c2, e_c3 = st.columns(3)
                 edit_s1 = e_c1.selectbox("1st Choice", supervisors_list, index=supervisors_list.index(target_data["1st Choice"]))
                 edit_s2 = e_c2.selectbox("2nd Choice", supervisors_list, index=supervisors_list.index(target_data["2nd Choice"]))
                 edit_s3 = e_c3.selectbox("3rd Choice", supervisors_list, index=supervisors_list.index(target_data["3rd Choice"]))
                 
-                # Member Edits (Full list allowed for Host)
                 e_m1, e_m2, e_m3 = st.columns(3)
                 edit_m1 = e_m1.selectbox("Member 1", all_students, index=all_students.index(target_data["Member 1"]))
                 edit_m2 = e_m2.selectbox("Member 2", all_students, index=all_students.index(target_data["Member 2"]))
@@ -180,19 +176,14 @@ if os.path.exists(groups_path):
                 edit_m3 = e_m3.selectbox("Member 3", ["None"] + all_students, index=(all_students.index(m3_val)+1 if m3_val != "None" else 0))
 
                 col_btn1, col_btn2 = st.columns(2)
-                update_btn = col_btn1.form_submit_button("💾 Save Changes")
-                delete_btn = col_btn2.form_submit_button("❌ Delete This Row")
-
-                if update_btn:
+                if col_btn1.form_submit_button("💾 Save Changes"):
                     df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
-                    st.success("Changes Saved!")
                     st.rerun()
                 
-                if delete_btn:
+                if col_btn2.form_submit_button("❌ Delete This Row"):
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
-                    st.warning("Row Deleted!")
                     st.rerun()
 
     st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
