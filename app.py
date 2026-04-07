@@ -75,7 +75,7 @@ def load_data():
             pass
     return all_students, assigned_students
 
-supervisors_list = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
+supervisors_list = ["Dr. Muhammad Anwar", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
 all_students, assigned_students = load_data()
 
 # --- SIDEBAR ADMIN & LOGOUT LOGIC ---
