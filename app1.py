@@ -83,7 +83,6 @@ if 'is_host' not in st.session_state:
     st.session_state.is_host = False
 
 if not st.session_state.is_host:
-    # Login Mode
     secret_input = st.sidebar.text_input("Host Login", placeholder="Enter password...", type="password")
     if secret_input == FORM_NAME:
         st.session_state.is_host = True
@@ -91,7 +90,6 @@ if not st.session_state.is_host:
     elif secret_input != "":
         st.sidebar.error("Access Denied")
 else:
-    # Logged In Mode
     st.sidebar.success("Host Mode Active")
     if st.sidebar.button("🚪 Logout"):
         st.session_state.is_host = False
@@ -159,15 +157,15 @@ if submit:
 
 # --- DISPLAY & EDIT SECTION ---
 st.divider()
-st.subheader("📋 Registered Groups")
 
-if os.path.exists(groups_path):
-    df = pd.read_csv(groups_path)
-    df_display = df.copy()
-    df_display.index = df_display.index + 1
+if is_host:
+    st.subheader("📋 Registered Groups (Host View)")
+    
+    if os.path.exists(groups_path):
+        df = pd.read_csv(groups_path)
+        df_display = df.copy()
+        df_display.index = df_display.index + 1
 
-    # --- HOST EDIT MODE ---
-    if is_host:
         with st.expander("📝 Host: Edit Existing Registration"):
             row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
             target_data = df.iloc[int(row_idx)-1]
@@ -193,14 +191,19 @@ if os.path.exists(groups_path):
                 if b1.form_submit_button("💾 Save Changes"):
                     df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
+                    st.success("Changes Saved!")
                     st.rerun()
                 if b2.form_submit_button("❌ Delete This Row"):
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
+                    st.warning("Row Deleted!")
                     st.rerun()
 
-    st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
-    st.dataframe(df_display, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
+        st.dataframe(df_display, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("No groups registered yet.")
 else:
-    st.info("No groups registered yet.")
+    st.subheader("📋 Registration Status")
+    st.info("The list of registered groups is restricted. Please login as a Host to view or edit registrations.")
