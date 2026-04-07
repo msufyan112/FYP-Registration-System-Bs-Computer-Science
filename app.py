@@ -10,7 +10,7 @@ groups_path = os.path.join(current_dir, 'final_groups.csv')
 # --- CONFIGURATION ---
 st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="centered")
 
-# --- ADMIN CREDENTIALS ---
+
 FORM_NAME = "FYPREGISTRATION"
 
 # --- BACKGROUND & STYLING ---
