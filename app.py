@@ -159,15 +159,17 @@ if submit:
 
 # --- DISPLAY & EDIT SECTION ---
 st.divider()
-st.subheader("📋 Registered Groups")
 
-if os.path.exists(groups_path):
-    df = pd.read_csv(groups_path)
-    df_display = df.copy()
-    df_display.index = df_display.index + 1
+# Logic: Only the host can see the registered groups
+if is_host:
+    st.subheader("📋 Registered Groups (Host View)")
+    
+    if os.path.exists(groups_path):
+        df = pd.read_csv(groups_path)
+        df_display = df.copy()
+        df_display.index = df_display.index + 1
 
-    # --- HOST EDIT MODE ---
-    if is_host:
+        # --- HOST EDIT MODE ---
         with st.expander("📝 Host: Edit Existing Registration"):
             row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
             target_data = df.iloc[int(row_idx)-1]
@@ -180,6 +182,37 @@ if os.path.exists(groups_path):
                 edit_s1 = e_c1.selectbox("1st Choice", supervisors_list, index=supervisors_list.index(target_data["1st Choice"]))
                 edit_s2 = e_c2.selectbox("2nd Choice", supervisors_list, index=supervisors_list.index(target_data["2nd Choice"]))
                 edit_s3 = e_c3.selectbox("3rd Choice", supervisors_list, index=supervisors_list.index(target_data["3rd Choice"]))
+                
+                e_m1, e_m2, e_m3 = st.columns(3)
+                edit_m1 = e_m1.selectbox("Member 1", all_students, index=all_students.index(target_data["Member 1"]))
+                edit_m2 = e_m2.selectbox("Member 2", all_students, index=all_students.index(target_data["Member 2"]))
+                
+                m3_raw = target_data["Member 3"]
+                m3_val = m3_raw if pd.notna(m3_raw) and m3_raw != "" else "None"
+                edit_m3 = e_m3.selectbox("Member 3", ["None"] + all_students, index=(all_students.index(m3_val)+1 if m3_val != "None" else 0))
+
+                b1, b2 = st.columns(2)
+                if b1.form_submit_button("💾 Save Changes"):
+                    df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
+                    df.to_csv(groups_path, index=False)
+                    st.success("Changes Saved!")
+                    st.rerun()
+                if b2.form_submit_button("❌ Delete This Row"):
+                    df = df.drop(df.index[int(row_idx)-1])
+                    df.to_csv(groups_path, index=False)
+                    st.warning("Row Deleted!")
+                    st.rerun()
+
+        # Display the Table
+        st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
+        st.dataframe(df_display, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("No groups registered yet.")
+else:
+    # What regular students see instead of the table
+    st.subheader("📋 Registration Status")
+    st.info("The list of registered groups is restricted. Please login as a Host to view or edit registrations.")
                 
                 e_m1, e_m2, e_m3 = st.columns(3)
                 edit_m1 = e_m1.selectbox("Member 1", all_students, index=all_students.index(target_data["Member 1"]))
