@@ -16,42 +16,42 @@ FORM_NAME = "FYPREGISTRATION"
 # --- BACKGROUND & STYLING ---
 def add_custom_style():
     st.markdown(
-         f"""
-         <style>
-         .stApp {{
-             background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
-             background-attachment: fixed;
-             background-size: cover;
-         }}
-         [data-testid="stForm"] {{
-             background-color: rgba(0, 0, 0, 0.4) !important; 
-             padding: 30px !important;
-             border-radius: 15px !important;
-             border: 2px solid rgba(255, 255, 255, 0.5) !important;
-             backdrop-filter: blur(8px);
-         }}
-         .main-table-container {{
-             background-color: rgba(0, 0, 0, 0.4);
-             padding: 20px;
-             border-radius: 15px;
-             border: 2px solid rgba(255, 255, 255, 0.5);
-             backdrop-filter: blur(8px);
-             margin-top: 20px;
-         }}
-         h1, h2, h3, label, p, .stMarkdown {{
-             color: white !important;
-             text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
-         }}
-         label {{ font-weight: bold !important; }}
-         .stAlert {{
-             background-color: rgba(255, 255, 255, 0.1) !important;
-             color: white !important;
-             border: 1px solid rgba(255, 255, 255, 0.3) !important;
-         }}
-         </style>
-         """,
-         unsafe_allow_html=True
-     )
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("https://images.unsplash.com/photo-1517694712202-14dd9538aa97");
+            background-attachment: fixed;
+            background-size: cover;
+        }}
+        [data-testid="stForm"] {{
+            background-color: rgba(0, 0, 0, 0.4) !important; 
+            padding: 30px !important;
+            border-radius: 15px !important;
+            border: 2px solid rgba(255, 255, 255, 0.5) !important;
+            backdrop-filter: blur(8px);
+        }}
+        .main-table-container {{
+            background-color: rgba(0, 0, 0, 0.4);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(8px);
+            margin-top: 20px;
+        }}
+        h1, h2, h3, label, p, .stMarkdown {{
+            color: white !important;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
+        }}
+        label {{ font-weight: bold !important; }}
+        .stAlert {{
+            background-color: rgba(255, 255, 255, 0.1) !important;
+            color: white !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
 
 add_custom_style()
 
@@ -60,16 +60,18 @@ def load_data():
     if not os.path.exists(students_path):
         st.error(f"Error: '{students_path}' not found!")
         return [], []
+    
     all_students_df = pd.read_csv(students_path)
     all_students = sorted(all_students_df['Name'].tolist())
     assigned_students = []
+    
     if os.path.exists(groups_path):
         try:
             df = pd.read_csv(groups_path)
             for col in ['Member 1', 'Member 2', 'Member 3']:
                 if col in df.columns:
                     assigned_students.extend(df[col].dropna().tolist())
-        except:
+        except Exception:
             pass
     return all_students, assigned_students
 
@@ -107,7 +109,7 @@ is_host = st.session_state.is_host
 st.title("🎓 FYP Registration Portal")
 st.markdown("### Final Year Project Group & Supervisor Selection")
 
-# --- THE REGISTRATION FORM (Public) ---
+# --- THE REGISTRATION FORM ---
 with st.form("registration_form", clear_on_submit=True):
     st.subheader("1. Project Details")
     group_name = st.text_input("Project Title / Group Name", placeholder="Enter your project title...")
@@ -157,15 +159,14 @@ if submit:
 
 # --- DISPLAY & EDIT SECTION ---
 st.divider()
+st.subheader("📋 Registered Groups")
 
-if is_host:
-    st.subheader("📋 Registered Groups (Host View)")
-    
-    if os.path.exists(groups_path):
-        df = pd.read_csv(groups_path)
-        df_display = df.copy()
-        df_display.index = df_display.index + 1
+if os.path.exists(groups_path):
+    df = pd.read_csv(groups_path)
+    df_display = df.copy()
+    df_display.index = df_display.index + 1
 
+    if is_host:
         with st.expander("📝 Host: Edit Existing Registration"):
             row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
             target_data = df.iloc[int(row_idx)-1]
@@ -174,50 +175,47 @@ if is_host:
                 st.write(f"Editing Row {row_idx}")
                 edit_name = st.text_input("Edit Title", value=target_data["Group Name"])
                 
-                # Supervisor Edits
                 e_c1, e_c2, e_c3 = st.columns(3)
-                edit_s1 = e_c1.selectbox("1st Choice", supervisors_list, index=supervisors_list.index(target_data["1st Choice"]))
-                edit_s2 = e_c2.selectbox("2nd Choice", supervisors_list, index=supervisors_list.index(target_data["2nd Choice"]))
-                edit_s3 = e_c3.selectbox("3rd Choice", supervisors_list, index=supervisors_list.index(target_data["3rd Choice"]))
                 
-                # Member Edits with Safe Index Fallbacks
+                # --- SAFE INDEX SEARCH FOR SUPERVISORS ---
+                def get_idx(val, lst, default=0):
+                    try: return lst.index(val)
+                    except: return default
+
+                edit_s1 = e_c1.selectbox("1st Choice", supervisors_list, index=get_idx(target_data["1st Choice"], supervisors_list))
+                edit_s2 = e_c2.selectbox("2nd Choice", supervisors_list, index=get_idx(target_data["2nd Choice"], supervisors_list))
+                edit_s3 = e_c3.selectbox("3rd Choice", supervisors_list, index=get_idx(target_data["3rd Choice"], supervisors_list))
+                
                 e_m1, e_m2, e_m3 = st.columns(3)
+                edit_m1 = e_m1.selectbox("Member 1", all_students, index=get_idx(target_data["Member 1"], all_students))
+                edit_m2 = e_m2.selectbox("Member 2", all_students, index=get_idx(target_data["Member 2"], all_students))
                 
-                # Member 1
-                try: m1_idx = all_students.index(target_data["Member 1"])
-                except ValueError: m1_idx = 0
-                edit_m1 = e_m1.selectbox("Member 1", all_students, index=m1_idx)
-                
-                # Member 2
-                try: m2_idx = all_students.index(target_data["Member 2"])
-                except ValueError: m2_idx = 0
-                edit_m2 = e_m2.selectbox("Member 2", all_students, index=m2_idx)
-                
-                # Member 3
+                # --- FIXED: SAFE INDEX SEARCH FOR MEMBER 3 ---
                 m3_raw = target_data["Member 3"]
-                m3_val = m3_raw if pd.notna(m3_raw) and m3_raw != "" else "None"
-                m3_opts = ["None"] + all_students
-                try: m3_idx = m3_opts.index(m3_val)
-                except ValueError: m3_idx = 0
-                edit_m3 = e_m3.selectbox("Member 3", m3_opts, index=m3_idx)
+                m3_val = str(m3_raw) if pd.notna(m3_raw) and m3_raw != "" else "None"
+                
+                if m3_val == "None":
+                    m3_idx = 0
+                else:
+                    try:
+                        m3_idx = all_students.index(m3_val) + 1
+                    except ValueError:
+                        m3_idx = 0
+                
+                edit_m3 = e_m3.selectbox("Member 3", ["None"] + all_students, index=m3_idx)
 
                 b1, b2 = st.columns(2)
                 if b1.form_submit_button("💾 Save Changes"):
                     df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
-                    st.success("Changes Saved!")
                     st.rerun()
                 if b2.form_submit_button("❌ Delete This Row"):
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
-                    st.warning("Row Deleted!")
                     st.rerun()
 
-        st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
-        st.dataframe(df_display, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-    else:
-        st.info("No groups registered yet.")
+    st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
+    st.dataframe(df_display, use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 else:
-    st.subheader("📋 Registration Status")
-    st.info("The list of registered groups is restricted. Please login as a Host to view or edit registrations.")
+    st.info("No groups registered yet.")
