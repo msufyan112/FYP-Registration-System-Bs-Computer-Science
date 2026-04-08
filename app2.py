@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import random
 
 # --- PATH LOGIC ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -11,6 +10,12 @@ groups_path = os.path.join(current_dir, 'final_groups.csv')
 # --- CONFIGURATION ---
 st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="centered")
 FORM_NAME = "FYPREGISTRATION"
+
+# --- SESSION STATE INITIALIZATION ---
+if 'is_host' not in st.session_state:
+    st.session_state.is_host = False
+if 'show_login' not in st.session_state:
+    st.session_state.show_login = False
 
 # --- BACKGROUND & STYLING ---
 def add_custom_style():
@@ -23,29 +28,22 @@ def add_custom_style():
             background-size: cover;
         }}
         [data-testid="stForm"] {{
-            background-color: rgba(0, 0, 0, 0.4) !important; 
+            background-color: rgba(0, 0, 0, 0.6) !important; 
             padding: 30px !important;
             border-radius: 15px !important;
-            border: 2px solid rgba(255, 255, 255, 0.5) !important;
-            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(10px);
         }}
         .main-table-container {{
-            background-color: rgba(0, 0, 0, 0.4);
+            background-color: rgba(0, 0, 0, 0.6);
             padding: 20px;
             border-radius: 15px;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            backdrop-filter: blur(8px);
+            backdrop-filter: blur(10px);
             margin-top: 20px;
         }}
         h1, h2, h3, label, p, .stMarkdown {{
             color: white !important;
-            text-shadow: 2px 2px 8px rgba(0, 0, 0, 1);
-        }}
-        label {{ font-weight: bold !important; }}
-        .stAlert {{
-            background-color: rgba(255, 255, 255, 0.1) !important;
-            color: white !important;
-            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }}
         </style>
         """,
@@ -54,116 +52,87 @@ def add_custom_style():
 
 add_custom_style()
 
-# --- DATA LOADING ---
+# --- HELPER FUNCTIONS ---
 def load_data():
     if not os.path.exists(students_path):
-        st.error(f"Error: '{students_path}' not found!")
         return [], []
-    
     all_students_df = pd.read_csv(students_path)
     all_students = sorted(all_students_df['Name'].tolist())
     assigned_students = []
-    
     if os.path.exists(groups_path):
         try:
             df = pd.read_csv(groups_path)
             for col in ['Member 1', 'Member 2', 'Member 3']:
                 if col in df.columns:
                     assigned_students.extend(df[col].dropna().tolist())
-        except Exception:
-            pass
+        except: pass
     return all_students, assigned_students
 
-supervisors_list = ["Dr. Anwar Muhammad", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
+def get_idx(val, lst, default=0):
+    try:
+        return lst.index(val)
+    except (ValueError, KeyError):
+        return default
+
+# --- DATA LOADING ---
+supervisors_list = ["Dr. Muhammad Anwar", "Dr. Waseeq ul Islam Zafar", "Mr. Usman Rafi"]
 all_students, assigned_students = load_data()
 
-# --- SIDEBAR ADMIN & LOGOUT LOGIC ---
-st.sidebar.title("Registration Portal")
+# --- TOP NAVIGATION / LOGIN LOGIC ---
+col_title, col_login = st.columns([4, 1])
 
-if 'is_host' not in st.session_state:
-    st.session_state.is_host = False
+with col_login:
+    if not st.session_state.is_host:
+        if st.button("🔐 Host Login"):
+            st.session_state.show_login = not st.session_state.show_login
+    else:
+        if st.button("🚪 Logout"):
+            st.session_state.is_host = False
+            st.session_state.show_login = False
+            st.rerun()
 
-if not st.session_state.is_host:
-    secret_input = st.sidebar.text_input("Host Login", placeholder="Enter password...", type="password")
-    if secret_input == FORM_NAME:
-        st.session_state.is_host = True
-        st.rerun()
-    elif secret_input != "":
-        st.sidebar.error("Access Denied")
-else:
-    st.sidebar.success("Host Mode Active")
-    if st.sidebar.button("🚪 Logout"):
-        st.session_state.is_host = False
-        st.rerun()
-    
-    st.sidebar.subheader("🛠️ Admin Controls")
-    
-    # --- RANDOM GROUPING LOGIC ---
-    if st.sidebar.button("🎲 Auto-Generate Random Groups"):
-        unassigned = [s for s in all_students if s not in assigned_students]
-        
-        if len(unassigned) < 2:
-            st.sidebar.warning("Not enough unassigned students to form a group.")
-        else:
-            random.shuffle(unassigned)
-            new_groups = []
-            # Create groups of 3
-            for i in range(0, len(unassigned), 3):
-                chunk = unassigned[i:i + 3]
-                if len(chunk) >= 2: # Only form group if at least 2 people remain
-                    group_data = {
-                        "Group Name": f"Random Group {random.randint(100, 999)}",
-                        "1st Choice": supervisors_list[0],
-                        "2nd Choice": supervisors_list[1],
-                        "3rd Choice": supervisors_list[2],
-                        "Member 1": chunk[0],
-                        "Member 2": chunk[1],
-                        "Member 3": chunk[2] if len(chunk) > 2 else ""
-                    }
-                    new_groups.append(group_data)
-            
-            if new_groups:
-                new_df = pd.DataFrame(new_groups)
-                new_df.to_csv(groups_path, mode='a', index=False, header=not os.path.exists(groups_path))
-                st.sidebar.success(f"Generated {len(new_groups)} groups!")
+# --- LOGIN SECTION ---
+if st.session_state.show_login and not st.session_state.is_host:
+    with st.form("login_form"):
+        password = st.text_input("Enter Host Password", type="password")
+        if st.form_submit_button("Login"):
+            if password == FORM_NAME:
+                st.session_state.is_host = True
+                st.session_state.show_login = False
                 st.rerun()
+            else:
+                st.error("Incorrect Password")
 
-    if st.sidebar.button("🗑️ Clear All Registrations"):
+# --- ADMIN CONTROLS ---
+if st.session_state.is_host:
+    st.info("🛠️ Host Mode Active")
+    if st.button("🗑️ Clear All Registrations"):
         if os.path.exists(groups_path):
             os.remove(groups_path)
             st.rerun()
 
-is_host = st.session_state.is_host
-
-# --- UI DESIGN ---
 st.title("🎓 FYP Registration Portal")
 st.markdown("### Final Year Project Group & Supervisor Selection")
 
-# --- THE REGISTRATION FORM ---
+# --- REGISTRATION FORM ---
 with st.form("registration_form", clear_on_submit=True):
     st.subheader("1. Project Details")
-    group_name = st.text_input("Project Title / Group Name", placeholder="Enter your project title...")
+    group_name = st.text_input("Project Title / Group Name")
     
-    st.write("**Supervisor Priorities (Select three unique supervisors)**")
+    st.write("**Supervisor Priorities**")
     c1, c2, c3 = st.columns(3)
-    with c1:
-        s1 = st.selectbox("1st Choice (Highest)", ["-- Select --"] + supervisors_list, key="s1_reg")
-    with c2:
-        s2 = st.selectbox("2nd Choice", ["-- Select --"] + supervisors_list, key="s2_reg")
-    with c3:
-        s3 = st.selectbox("3rd Choice (Lowest)", ["-- Select --"] + supervisors_list, key="s3_reg")
+    s1 = c1.selectbox("1st Choice", ["-- Select --"] + supervisors_list, key="reg_s1")
+    s2 = c2.selectbox("2nd Choice", ["-- Select --"] + supervisors_list, key="reg_s2")
+    s3 = c3.selectbox("3rd Choice", ["-- Select --"] + supervisors_list, key="reg_s3")
     
     st.divider()
     st.subheader("2. Group Members")
     available = sorted([s for s in all_students if s not in assigned_students])
     
     col1, col2, col3 = st.columns(3)
-    with col1:
-        m1 = st.selectbox("Member 1 (Leader)", ["-- Select --"] + available, key="m1_reg")
-    with col2:
-        m2 = st.selectbox("Member 2", ["-- Select --"] + available, key="m2_reg")
-    with col3:
-        m3 = st.selectbox("Member 3 (Optional)", ["-- Select --", "None"] + available, key="m3_reg")
+    m1 = col1.selectbox("Member 1 (Leader)", ["-- Select --"] + available, key="reg_m1")
+    m2 = col2.selectbox("Member 2", ["-- Select --"] + available, key="reg_m2")
+    m3 = col3.selectbox("Member 3 (Optional)", ["-- Select --", "None"] + available, key="reg_m3")
 
     submit = st.form_submit_button("Submit Registration")
 
@@ -196,48 +165,42 @@ if os.path.exists(groups_path):
     df_display = df.copy()
     df_display.index = df_display.index + 1
 
-    if is_host:
-        with st.expander("📝 Host: Edit Existing Registration"):
-            row_idx = st.number_input("Enter Row Number to Edit", min_value=1, max_value=len(df_display), step=1)
+    if st.session_state.is_host:
+        with st.expander("📝 Edit Registration"):
+            row_idx = st.number_input("Row Number", min_value=1, max_value=len(df), step=1)
             target_data = df.iloc[int(row_idx)-1]
             
             with st.form("edit_form"):
-                st.write(f"Editing Row {row_idx}")
-                edit_name = st.text_input("Edit Title", value=target_data["Group Name"])
+                e_name = st.text_input("Edit Title", value=target_data["Group Name"])
                 
-                e_c1, e_c2, e_c3 = st.columns(3)
+                ec1, ec2, ec3 = st.columns(3)
+                es1 = ec1.selectbox("1st Choice", supervisors_list, index=get_idx(target_data["1st Choice"], supervisors_list))
+                es2 = ec2.selectbox("2nd Choice", supervisors_list, index=get_idx(target_data["2nd Choice"], supervisors_list))
+                es3 = ec3.selectbox("3rd Choice", supervisors_list, index=get_idx(target_data["3rd Choice"], supervisors_list))
                 
-                def get_idx(val, lst, default=0):
-                    try: return lst.index(val)
-                    except: return default
+                em1_opt = all_students
+                em2_opt = all_students
+                em3_opt = ["None"] + all_students
 
-                edit_s1 = e_c1.selectbox("1st Choice", supervisors_list, index=get_idx(target_data["1st Choice"], supervisors_list))
-                edit_s2 = e_c2.selectbox("2nd Choice", supervisors_list, index=get_idx(target_data["2nd Choice"], supervisors_list))
-                edit_s3 = e_c3.selectbox("3rd Choice", supervisors_list, index=get_idx(target_data["3rd Choice"], supervisors_list))
-                
-                e_m1, e_m2, e_m3 = st.columns(3)
-                edit_m1 = e_m1.selectbox("Member 1", all_students, index=get_idx(target_data["Member 1"], all_students))
-                edit_m2 = e_m2.selectbox("Member 2", all_students, index=get_idx(target_data["Member 2"], all_students))
-                
-                m3_raw = target_data["Member 3"]
-                m3_val = str(m3_raw) if pd.notna(m3_raw) and m3_raw != "" else "None"
-                
-                if m3_val == "None":
-                    m3_idx = 0
-                else:
-                    try:
-                        m3_idx = all_students.index(m3_val) + 1
-                    except ValueError:
-                        m3_idx = 0
-                
-                edit_m3 = e_m3.selectbox("Member 3", ["None"] + all_students, index=m3_idx)
+                em1_val = target_data["Member 1"]
+                em2_val = target_data["Member 2"]
+                em3_raw = target_data["Member 3"]
+                em3_val = str(em3_raw) if pd.notna(em3_raw) and str(em3_raw).strip() != "" else "None"
 
-                b1, b2 = st.columns(2)
-                if b1.form_submit_button("💾 Save Changes"):
-                    df.iloc[int(row_idx)-1] = [edit_name, edit_s1, edit_s2, edit_s3, edit_m1, edit_m2, edit_m3 if edit_m3 != "None" else ""]
+                emc1, emc2, emc3 = st.columns(3)
+                em1 = emc1.selectbox("Member 1", em1_opt, index=get_idx(em1_val, em1_opt))
+                em2 = emc2.selectbox("Member 2", em2_opt, index=get_idx(em2_val, em2_opt))
+                em3 = emc3.selectbox("Member 3", em3_opt, index=get_idx(em3_val, em3_opt))
+
+                btn_save = st.form_submit_button("💾 Save Changes")
+                btn_del = st.form_submit_button("❌ Delete Registration")
+
+                if btn_save:
+                    df.iloc[int(row_idx)-1] = [e_name, es1, es2, es3, em1, em2, em3 if em3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
                     st.rerun()
-                if b2.form_submit_button("❌ Delete This Row"):
+                
+                if btn_del:
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
                     st.rerun()
@@ -247,3 +210,4 @@ if os.path.exists(groups_path):
     st.markdown('</div>', unsafe_allow_html=True)
 else:
     st.info("No groups registered yet.")
+    
