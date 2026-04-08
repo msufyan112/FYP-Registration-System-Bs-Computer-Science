@@ -114,7 +114,7 @@ if st.session_state.is_host:
 st.title("🎓 FYP Registration Portal")
 st.markdown("### Final Year Project Group & Supervisor Selection")
 
-# --- REGISTRATION FORM ---
+# --- REGISTRATION FORM (Visible to Everyone) ---
 with st.form("registration_form", clear_on_submit=True):
     st.subheader("1. Project Details")
     group_name = st.text_input("Project Title / Group Name")
@@ -153,21 +153,22 @@ if submit:
             "Member 1": m1, "Member 2": m2, "Member 3": m3 if m3 != "None" else ""
         }
         pd.DataFrame([new_row]).to_csv(groups_path, mode='a', index=False, header=not os.path.exists(groups_path))
-        st.success("✅ Registered!")
+        st.success("✅ Registered Successfully!")
         st.rerun()
 
-# --- DISPLAY & EDIT SECTION ---
-st.divider()
-st.subheader("📋 Registered Groups")
+# --- DISPLAY & EDIT SECTION (HOST ONLY) ---
+if st.session_state.is_host:
+    st.divider()
+    st.subheader("📋 Registered Groups (Host View Only)")
 
-if os.path.exists(groups_path):
-    df = pd.read_csv(groups_path)
-    df_display = df.copy()
-    df_display.index = df_display.index + 1
+    if os.path.exists(groups_path):
+        df = pd.read_csv(groups_path)
+        df_display = df.copy()
+        df_display.index = df_display.index + 1
 
-    if st.session_state.is_host:
-        with st.expander("📝 Edit Registration"):
-            row_idx = st.number_input("Row Number", min_value=1, max_value=len(df), step=1)
+        # Edit/Delete Interface
+        with st.expander("📝 Edit/Delete Registration"):
+            row_idx = st.number_input("Select Row Number", min_value=1, max_value=len(df), step=1)
             target_data = df.iloc[int(row_idx)-1]
             
             with st.form("edit_form"):
@@ -178,19 +179,17 @@ if os.path.exists(groups_path):
                 es2 = ec2.selectbox("2nd Choice", supervisors_list, index=get_idx(target_data["2nd Choice"], supervisors_list))
                 es3 = ec3.selectbox("3rd Choice", supervisors_list, index=get_idx(target_data["3rd Choice"], supervisors_list))
                 
+                # Use helper for member indexing to avoid ValueError
                 em1_opt = all_students
                 em2_opt = all_students
                 em3_opt = ["None"] + all_students
 
-                em1_val = target_data["Member 1"]
-                em2_val = target_data["Member 2"]
-                em3_raw = target_data["Member 3"]
-                em3_val = str(em3_raw) if pd.notna(em3_raw) and str(em3_raw).strip() != "" else "None"
-
-                emc1, emc2, emc3 = st.columns(3)
-                em1 = emc1.selectbox("Member 1", em1_opt, index=get_idx(em1_val, em1_opt))
-                em2 = emc2.selectbox("Member 2", em2_opt, index=get_idx(em2_val, em2_opt))
-                em3 = emc3.selectbox("Member 3", em3_opt, index=get_idx(em3_val, em3_opt))
+                em1 = st.selectbox("Member 1", em1_opt, index=get_idx(target_data["Member 1"], em1_opt))
+                em2 = st.selectbox("Member 2", em2_opt, index=get_idx(target_data["Member 2"], em2_opt))
+                
+                m3_raw = target_data["Member 3"]
+                m3_val = str(m3_raw) if pd.notna(m3_raw) and str(m3_raw).strip() != "" else "None"
+                em3 = st.selectbox("Member 3", em3_opt, index=get_idx(m3_val, em3_opt))
 
                 btn_save = st.form_submit_button("💾 Save Changes")
                 btn_del = st.form_submit_button("❌ Delete Registration")
@@ -198,15 +197,22 @@ if os.path.exists(groups_path):
                 if btn_save:
                     df.iloc[int(row_idx)-1] = [e_name, es1, es2, es3, em1, em2, em3 if em3 != "None" else ""]
                     df.to_csv(groups_path, index=False)
+                    st.success("Changes saved!")
                     st.rerun()
                 
                 if btn_del:
                     df = df.drop(df.index[int(row_idx)-1])
                     df.to_csv(groups_path, index=False)
+                    st.warning("Registration deleted.")
                     st.rerun()
 
-    st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
-    st.dataframe(df_display, use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+        # Display Table
+        st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
+        st.dataframe(df_display, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.info("No groups registered in the database yet.")
 else:
-    st.info("No groups registered yet.")
+    # Optional footer for students so they know registration is active
+    st.divider()
+    st.caption("FYP Registration Portal v1.0 | Host login required to view all submissions.")
