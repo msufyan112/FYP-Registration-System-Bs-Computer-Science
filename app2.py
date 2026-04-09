@@ -9,7 +9,7 @@ students_path = os.path.join(current_dir, 'students.csv')
 groups_path = os.path.join(current_dir, 'final_groups.csv')
 
 # --- CONFIGURATION ---
-st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="FYP Registration Portal", page_icon="🎓", layout="wide")
 FORM_NAME = "FYPREGISTRATION"
 
 # --- SESSION STATE INITIALIZATION ---
@@ -29,20 +29,20 @@ def add_custom_style():
             background-size: cover;
         }}
         [data-testid="stForm"] {{
-            background-color: rgba(0, 0, 0, 0.6) !important; 
+            background-color: rgba(0, 0, 0, 0.7) !important; 
             padding: 30px !important;
             border-radius: 15px !important;
             border: 1px solid rgba(255, 255, 255, 0.2) !important;
             backdrop-filter: blur(10px);
         }}
         .main-table-container {{
-            background-color: rgba(0, 0, 0, 0.6);
+            background-color: rgba(0, 0, 0, 0.7);
             padding: 20px;
             border-radius: 15px;
             backdrop-filter: blur(10px);
             margin-top: 20px;
         }}
-        h1, h2, h3, label, p, .stMarkdown {{
+        h1, h2, h3, label, p, span, .stMarkdown {{
             color: white !important;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
         }}
@@ -56,18 +56,21 @@ add_custom_style()
 # --- HELPER FUNCTIONS ---
 def load_data():
     if not os.path.exists(students_path):
-        return [], []
+        # Create a dummy students file if it doesn't exist for testing
+        pd.DataFrame({"Name": ["Student A", "Student B", "Student C"]}).to_csv(students_path, index=False)
+    
     all_students_df = pd.read_csv(students_path)
     all_students = sorted(all_students_df['Name'].tolist())
     assigned_students = []
+    
     if os.path.exists(groups_path):
         try:
             df = pd.read_csv(groups_path)
             for col in ['Member 1', 'Member 2', 'Member 3']:
                 if col in df.columns:
-                    assigned_students.extend(df[col].dropna().tolist())
+                    assigned_students.extend(df[col].dropna().astype(str).tolist())
         except: pass
-    return all_students, assigned_students
+    return all_students, [s for s in assigned_students if s.strip() != "" and s != "nan"]
 
 def get_idx(val, lst, default=0):
     try:
@@ -107,43 +110,147 @@ if st.session_state.show_login and not st.session_state.is_host:
 # --- ADMIN CONTROLS ---
 if st.session_state.is_host:
     st.info("🛠️ Host Mode Active")
-    c_admin1, c_admin2 = st.columns(2)
+    c_admin1, c_admin2, c_admin3 = st.columns(3)
     
     with c_admin1:
-        if st.button("🗑️ Clear All Registrations"):
+        if st.button("🗑️ Clear All Data", use_container_width=True):
             if os.path.exists(groups_path):
                 os.remove(groups_path)
                 st.rerun()
     
     with c_admin2:
-        if st.button("🎲 Random Group Registration"):
-            available_pool = [s for s in all_students if s not in assigned_students]
-            
-            if len(available_pool) < 2:
-                st.warning("Not enough available students (min 2 required) to form a random group.")
-            else:
-                # Select 2-3 random students
-                num_to_pick = random.randint(2, min(3, len(available_pool)))
-                random_members = random.sample(available_pool, num_to_pick)
-                
-                # Select 3 unique random supervisors
-                random_sups = random.sample(supervisors_list, 3)
-                
-                # Create random data
+        if st.button("🎲 Single Random Group", use_container_width=True):
+            pool = [s for s in all_students if s not in assigned_students]
+            if len(pool) >= 2:
+                num = random.randint(2, min(3, len(pool)))
+                members = random.sample(pool, num)
+                sups = random.sample(supervisors_list, 3)
                 new_row = {
-                    "Group Name": f"Auto-Group-{random.randint(1000, 9999)}",
-                    "1st Choice": random_sups[0],
-                    "2nd Choice": random_sups[1],
-                    "3rd Choice": random_sups[2],
-                    "Member 1": random_members[0],
-                    "Member 2": random_members[1],
-                    "Member 3": random_members[2] if num_to_pick == 3 else ""
+                    "Group Name": f"Auto-Group-{random.randint(100, 999)}",
+                    "1st Choice": sups[0], "2nd Choice": sups[1], "3rd Choice": sups[2],
+                    "Member 1": members[0], "Member 2": members[1],
+                    "Member 3": members[2] if num == 3 else ""
                 }
-                
                 pd.DataFrame([new_row]).to_csv(groups_path, mode='a', index=False, header=not os.path.exists(groups_path))
-                st.success(f"Successfully registered random group with {num_to_pick} members!")
+                st.rerun()
+            else:
+                st.warning("Not enough students left.")
+
+    with c_admin3:
+        if st.button("👥 Bulk Register ALL Students", use_container_width=True):
+            pool = [s for s in all_students if s not in assigned_students]
+            random.shuffle(pool)
+            
+            if len(pool) < 2:
+                st.warning("Need at least 2 students to form a group.")
+            else:
+                new_groups = []
+                # Process in chunks of 3
+                for i in range(0, len(pool), 3):
+                    chunk = pool[i:i+3]
+                    
+                    # Handle the "remainder" student: don't leave 1 person alone
+                    if len(chunk) == 1 and new_groups:
+                        new_groups[-1]["Member 3"] = chunk[0]
+                        continue
+                    
+                    sups = random.sample(supervisors_list, 3)
+                    new_groups.append({
+                        "Group Name": f"Random-GP-{random.randint(100, 999)}",
+                        "1st Choice": sups[0], "2nd Choice": sups[1], "3rd Choice": sups[2],
+                        "Member 1": chunk[0],
+                        "Member 2": chunk[1] if len(chunk) > 1 else "TBD",
+                        "Member 3": chunk[2] if len(chunk) > 2 else ""
+                    })
+                
+                pd.DataFrame(new_groups).to_csv(groups_path, mode='a', index=False, header=not os.path.exists(groups_path))
+                st.success(f"Generated {len(new_groups)} groups automatically!")
                 st.rerun()
 
+st.title("🎓 FYP Registration Portal")
+st.markdown("### Final Year Project Group & Supervisor Selection")
+
+# --- REGISTRATION FORM ---
+with st.form("registration_form", clear_on_submit=True):
+    st.subheader("1. Project Details")
+    group_name = st.text_input("Project Title / Group Name")
+    
+    st.write("**Supervisor Priorities**")
+    c1, c2, c3 = st.columns(3)
+    s1 = c1.selectbox("1st Choice", ["-- Select --"] + supervisors_list, key="reg_s1")
+    s2 = c2.selectbox("2nd Choice", ["-- Select --"] + supervisors_list, key="reg_s2")
+    s3 = c3.selectbox("3rd Choice", ["-- Select --"] + supervisors_list, key="reg_s3")
+    
+    st.divider()
+    st.subheader("2. Group Members")
+    available = sorted([s for s in all_students if s not in assigned_students])
+    
+    col1, col2, col3 = st.columns(3)
+    m1 = col1.selectbox("Member 1 (Leader)", ["-- Select --"] + available, key="reg_m1")
+    m2 = col2.selectbox("Member 2", ["-- Select --"] + available, key="reg_m2")
+    m3 = col3.selectbox("Member 3 (Optional)", ["-- Select --", "None"] + available, key="reg_m3")
+
+    submit = st.form_submit_button("Submit Registration", use_container_width=True)
+
+if submit:
+    selected_sups = [s for s in [s1, s2, s3] if s != "-- Select --"]
+    current_members = [m for m in [m1, m2, m3] if m not in ["-- Select --", "None"]]
+    
+    if not group_name or len(selected_sups) < 3:
+        st.error("⚠️ Please fill in all details.")
+    elif len(set(selected_sups)) < 3:
+        st.error("⚠️ Supervisor choices must be unique.")
+    elif len(current_members) < 2:
+        st.error("⚠️ At least 2 members required.")
+    else:
+        new_row = {
+            "Group Name": group_name,
+            "1st Choice": s1, "2nd Choice": s2, "3rd Choice": s3,
+            "Member 1": m1, "Member 2": m2, "Member 3": m3 if m3 != "None" else ""
+        }
+        pd.DataFrame([new_row]).to_csv(groups_path, mode='a', index=False, header=not os.path.exists(groups_path))
+        st.success("✅ Registered Successfully!")
+        st.rerun()
+
+# --- DISPLAY & EDIT SECTION (HOST ONLY) ---
+if st.session_state.is_host:
+    st.divider()
+    st.subheader("📋 Registered Groups (Host View)")
+
+    if os.path.exists(groups_path):
+        df = pd.read_csv(groups_path)
+        if not df.empty:
+            # Edit interface
+            with st.expander("📝 Edit/Delete Specific Registration"):
+                row_idx = st.number_input("Select Row Number", min_value=1, max_value=len(df), step=1)
+                target_data = df.iloc[int(row_idx)-1]
+                
+                with st.form("edit_form"):
+                    e_name = st.text_input("Edit Title", value=target_data["Group Name"])
+                    em1 = st.selectbox("Member 1", all_students, index=get_idx(target_data["Member 1"], all_students))
+                    em2 = st.selectbox("Member 2", all_students, index=get_idx(target_data["Member 2"], all_students))
+                    
+                    btn_save = st.form_submit_button("💾 Save Changes")
+                    btn_del = st.form_submit_button("❌ Delete Registration")
+
+                    if btn_save:
+                        df.iloc[int(row_idx)-1, df.columns.get_loc("Group Name")] = e_name
+                        df.iloc[int(row_idx)-1, df.columns.get_loc("Member 1")] = em1
+                        df.iloc[int(row_idx)-1, df.columns.get_loc("Member 2")] = em2
+                        df.to_csv(groups_path, index=False)
+                        st.rerun()
+                    
+                    if btn_del:
+                        df = df.drop(df.index[int(row_idx)-1])
+                        df.to_csv(groups_path, index=False)
+                        st.rerun()
+
+            st.markdown('<div class="main-table-container">', unsafe_allow_html=True)
+            st.dataframe(df, use_container_width=True)
+            st.markdown('</div>', unsafe_allow_html=True)
+else:
+    st.divider()
+    st.caption("FYP Portal | Log in as host to manage records.")
 st.title("🎓 FYP Registration Portal")
 st.markdown("### Final Year Project Group & Supervisor Selection")
 
